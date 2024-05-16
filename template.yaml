@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  pet-sitter-image-upload=stack
+
+  Sample SAM Template for pet-sitter-image-upload=stack
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters: 
+  BucketName: 
+    Description: Name of s3 bucket
+    Type: String
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      MethodSettings:
+        - ResourcePath: /upload
+          HttpMethod: POST
+      Cors:
+        AllowMethods: "'POST'"
+        AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type'"
+
+  GenerateUploadUrlFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: generate_upload_url/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 5
+      Environment:
+        Variables:
+          bucketName: !Ref BucketName
+      Architectures:
+        - x86_64
+      Events:
+        ApiEvent:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /upload
+            Method: post
+            RestApiId:
+              Ref: ApiGatewayApi
+      Policies:
+        - AWSLambdaExecute
+        - Version: '2012-10-17' 
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Join 
+                  - ''
+                  - - !GetAtt ImageBucket.Arn
+                    - /*
+
+  ImageBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      BucketName: !Ref BucketName
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - PUT
+            AllowedOrigins:
+              - '*'
+
+  S3BucketReadPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Policy for bucket read access
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+        - Effect: Allow
+          Action: 
+            - "s3:GetObject"
+          Resource: !Join 
+              - ''
+              - - !GetAtt ImageBucket.Arn
+                - /*
+        - Effect: Allow
+          Action: 
+            - "s3:ListObject"
+          Resource: !GetAtt ImageBucket.Arn
+        - Effect: Allow
+          Action: 
+            - "s3:DeleteObject"
+          Resource: !Join 
+              - ''
+              - - !GetAtt ImageBucket.Arn
+                - /*
+
+Outputs:
+  GenerateUploadUrlFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt GenerateUploadUrlFunction.Arn
+  GenerateUploadUrlFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt GenerateUploadUrlFunctionRole.Arn
+  BucketName:
+    Value: !Ref ImageBucket
+    Description: Name of the bucket

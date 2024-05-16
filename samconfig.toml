@@ -1,0 +1,13 @@
+version = 0.1
+[dev]
+[dev.deploy]
+[dev.deploy.parameters]
+stack_name = "dev-pet-sitter-upload-stack"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-10pf1mgfxlyxe"
+s3_prefix = "dev-pet-sitter-upload-stack"
+region = "us-east-2"
+profile = "create-ecs-service-stack"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "BucketName=\"dev-pet-sitter-images\""
+image_repositories = []
