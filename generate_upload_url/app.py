@@ -34,11 +34,10 @@ def lambda_handler(event, context):
     body = json.loads(event.get("body"))
     extension = body.get("extension", "")
     itemType = body.get("itemType", "")
-    itemId = body.get("itemId", "")
 
     bucketName = os.environ['bucketName']
 
-    if (extension == "" or itemType == "" or itemId == ""):
+    if (extension == "" or itemType == ""):
         return {
             "statusCode": 400,
             "headers": {
@@ -46,13 +45,13 @@ def lambda_handler(event, context):
                 'Content-Type': 'application/json'
             },
             "body": json.dumps({
-                "error": "The following fields are required in the body: extension, itemType, itemId",
-                "message": "The following fields are required in the body: extension, itemType, itemId"
+                "error": "The following fields are required in the body: extension, itemType",
+                "message": "The following fields are required in the body: extension, itemType"
             }),
         }
 
     guid = uuid.uuid4()
-    s3ObjectName = str(itemType) + "/" + str(itemId) + "/" str(guid) + extension
+    s3ObjectName = str(itemType) + "/" + str(guid) + extension
     presignedUploadUrl = create_presigned_url(bucketName, s3ObjectName)
 
     return {
